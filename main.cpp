@@ -15,24 +15,15 @@
 void usage(){
     puts("./pcap_test <interfacee>");
 }
-const char* ip_to_str(const uint8_t* ipAddr)
-{
-    static char buf[16];
-    sprintf(buf, "%d.%d.%d.%d\0", ipAddr[3], ipAddr[2], ipAddr[1], ipAddr[0]);
-    return buf;
-}
 
-int anal(pcap_t* handle,char* dev){
+int anal(pcap_t* handle){
+
     char errbuf[PCAP_ERRBUF_SIZE];
     struct pcap_pkthdr* header;
     const u_char* packet;
-    struct libnet_link_init *network;
-    int packet_size;
-    u_int32_t ip_addr;
     struct libnet_ethernet_hdr *eth_hdr;
     struct libnet_ipv4_hdr *ip_hdr;
-    struct libnet_tcp_hdr *tcp_hdr;
-    libnet_t *l;
+    struct libnet_tcp_hdr *tcp_hdr;\
 
 
     int res = pcap_next_ex(handle, &header, &packet);
@@ -41,18 +32,18 @@ int anal(pcap_t* handle,char* dev){
 
     eth_hdr=(struct libnet_ethernet_hdr*)packet;
 
-    printf("smac= %hhx:%hhx:%hhx:%hhx:%hhx:%hhx\n", eth_hdr->ether_shost[0], eth_hdr->ether_shost[1], eth_hdr->ether_shost[2], eth_hdr->ether_shost[3], eth_hdr->ether_shost[4], eth_hdr->ether_shost[5]);
-    printf("dmac= %hhx:%hhx:%hhx:%hhx:%hhx:%hhx\n", eth_hdr->ether_dhost[0], eth_hdr->ether_dhost[1], eth_hdr->ether_dhost[2], eth_hdr->ether_dhost[3], eth_hdr->ether_dhost[4], eth_hdr->ether_dhost[5]);
+    printf("smac : %hhx:%hhx:%hhx:%hhx:%hhx:%hhx\n", eth_hdr->ether_shost[0], eth_hdr->ether_shost[1], eth_hdr->ether_shost[2], eth_hdr->ether_shost[3], eth_hdr->ether_shost[4], eth_hdr->ether_shost[5]);
+    printf("dmac : %hhx:%hhx:%hhx:%hhx:%hhx:%hhx\n", eth_hdr->ether_dhost[0], eth_hdr->ether_dhost[1], eth_hdr->ether_dhost[2], eth_hdr->ether_dhost[3], eth_hdr->ether_dhost[4], eth_hdr->ether_dhost[5]);
 
     if(ntohs(eth_hdr->ether_type) != ETHERTYPE_IP)
         return 1;
     ip_hdr=(libnet_ipv4_hdr*)(packet+LIBNET_ETH_H);
-    printf("ip_src: %s\n",inet_ntoa(ip_hdr->ip_src));
-    printf("ip_des: %s\n",inet_ntoa(ip_hdr->ip_dst));
+    printf("ip_src : %s\n",inet_ntoa(ip_hdr->ip_src));
+    printf("ip_des : %s\n",inet_ntoa(ip_hdr->ip_dst));
 
     if(ip_hdr->ip_p != IPPROTO_TCP)
         return 1;
-    //printf("%d\n",ip_hdr->ip_len);
+
     tcp_hdr=(libnet_tcp_hdr*)(packet+LIBNET_IPV4_H+LIBNET_ETH_H);//(int)(*(&(ip_hdr->ip_len)-1))/16*5);//
     printf("src_port : %d\n",ntohs(tcp_hdr->th_sport));
     printf("des_port : %d\n",ntohs(tcp_hdr->th_dport));
@@ -64,6 +55,7 @@ int anal(pcap_t* handle,char* dev){
     puts("");
 
     printf("%u bytes captured\n", header->caplen);
+    puts("-----------------------------------------------");
     return 1;
 }
 
@@ -92,7 +84,7 @@ int main(int argc, char* argv[]) {
         return -1;
     }
     while (true) {
-        if(anal(handle,dev)==-1)
+        if(anal(handle)==-1)
             break;
     }
     pcap_close(handle);

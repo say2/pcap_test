@@ -32,6 +32,8 @@ int anal(pcap_t* handle){
 
     eth_hdr=(struct libnet_ethernet_hdr*)packet;
 
+    printf("%u bytes captured\n", header->caplen);
+
     printf("smac : %hhx:%hhx:%hhx:%hhx:%hhx:%hhx\n", eth_hdr->ether_shost[0], eth_hdr->ether_shost[1], eth_hdr->ether_shost[2], eth_hdr->ether_shost[3], eth_hdr->ether_shost[4], eth_hdr->ether_shost[5]);
     printf("dmac : %hhx:%hhx:%hhx:%hhx:%hhx:%hhx\n", eth_hdr->ether_dhost[0], eth_hdr->ether_dhost[1], eth_hdr->ether_dhost[2], eth_hdr->ether_dhost[3], eth_hdr->ether_dhost[4], eth_hdr->ether_dhost[5]);
 
@@ -54,8 +56,6 @@ int anal(pcap_t* handle){
     }
     puts("");
 
-    printf("%u bytes captured\n", header->caplen);
-    puts("-----------------------------------------------");
     return 1;
 }
 
@@ -86,6 +86,7 @@ int main(int argc, char* argv[]) {
     while (true) {
         if(anal(handle)==-1)
             break;
+        puts("-----------------------------------------------");
     }
     pcap_close(handle);
 

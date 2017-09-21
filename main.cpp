@@ -48,7 +48,7 @@ int anal(pcap_t* handle){
     printf("src_port : %d\n",ntohs(tcp_hdr->th_sport));
     printf("des_port : %d\n",ntohs(tcp_hdr->th_dport));
 
-    int hdr_len=LIBNET_ETH_H+LIBNET_IPV4_H+LIBNET_TCP_H;
+    int hdr_len=LIBNET_ETH_H+LIBNET_IPV4_H+LIBNET_TCP_H+0xc;
     for(int i=hdr_len;i<header->len;i++){
         printf("%hhx ",*(packet+i));
     }

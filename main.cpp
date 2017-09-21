@@ -46,7 +46,7 @@ int anal(pcap_t* handle){
     if(ip_hdr->ip_p != IPPROTO_TCP)
         return 1;
 
-    tcp_hdr=(libnet_tcp_hdr*)(packet+LIBNET_IPV4_H+LIBNET_ETH_H);//(int)(*(&(ip_hdr->ip_len)-1))/16*5);//
+    tcp_hdr=(libnet_tcp_hdr*)(packet+LIBNET_IPV4_H+LIBNET_ETH_H);
     printf("src_port : %d\n",ntohs(tcp_hdr->th_sport));
     printf("des_port : %d\n",ntohs(tcp_hdr->th_dport));
 

@@ -1,6 +1,5 @@
 #include <iostream>
 #include <pcap.h>
-#include <stdint.h>
 #include <libnet.h>
 /*
  * Ethernet Header의 src mac / dst mac
@@ -11,8 +10,16 @@
 
 (Data가 존재하는 경우) 해당 Payload(Data)의 hexa decimal value(16바이트까지만)
  */
+
+
 void usage(){
     puts("./pcap_test <interfacee>");
+}
+const char* ip_to_str(const uint8_t* ipAddr)
+{
+    static char buf[16];
+    sprintf(buf, "%d.%d.%d.%d\0", ipAddr[3], ipAddr[2], ipAddr[1], ipAddr[0]);
+    return buf;
 }
 
 int anal(pcap_t* handle,char* dev){
@@ -22,7 +29,9 @@ int anal(pcap_t* handle,char* dev){
     struct libnet_link_init *network;
     int packet_size;
     u_int32_t ip_addr;
-    struct libnet_ether_addr *mac_addr;
+    struct libnet_ethernet_hdr *eth_hdr;
+    struct libnet_ipv4_hdr *ip_hdr;
+    struct libnet_tcp_hdr *tcp_hdr;
     libnet_t *l;
 
 
@@ -30,22 +39,30 @@ int anal(pcap_t* handle,char* dev){
     if (res == -1 || res == -2)
         return -1;
 
+    eth_hdr=(struct libnet_ethernet_hdr*)packet;
 
-    //if(network=libnet_open   ())
-    packet_size=LIBNET_IPV4_H+LIBNET_ETH_H+LIBNET_ICMPV4_MASK_H;
-    l=libnet_init(LIBNET_RAW4,dev,errbuf);
-    if(!l){
-        puts("libnet_init_error");
-        return -1;
+    printf("smac= %hhx:%hhx:%hhx:%hhx:%hhx:%hhx\n", eth_hdr->ether_shost[0], eth_hdr->ether_shost[1], eth_hdr->ether_shost[2], eth_hdr->ether_shost[3], eth_hdr->ether_shost[4], eth_hdr->ether_shost[5]);
+    printf("dmac= %hhx:%hhx:%hhx:%hhx:%hhx:%hhx\n", eth_hdr->ether_dhost[0], eth_hdr->ether_dhost[1], eth_hdr->ether_dhost[2], eth_hdr->ether_dhost[3], eth_hdr->ether_dhost[4], eth_hdr->ether_dhost[5]);
+
+    if(ntohs(eth_hdr->ether_type) != ETHERTYPE_IP)
+        return 1;
+    ip_hdr=(libnet_ipv4_hdr*)(packet+LIBNET_ETH_H);
+    printf("ip_src: %s\n",inet_ntoa(ip_hdr->ip_src));
+    printf("ip_des: %s\n",inet_ntoa(ip_hdr->ip_dst));
+
+    if(ip_hdr->ip_p != IPPROTO_TCP)
+        return 1;
+    //printf("%d\n",ip_hdr->ip_len);
+    tcp_hdr=(libnet_tcp_hdr*)(packet+LIBNET_IPV4_H+LIBNET_ETH_H);//(int)(*(&(ip_hdr->ip_len)-1))/16*5);//
+    printf("src_port : %d\n",ntohs(tcp_hdr->th_sport));
+    printf("des_port : %d\n",ntohs(tcp_hdr->th_dport));
+
+    int hdr_len=LIBNET_ETH_H+LIBNET_IPV4_H+LIBNET_TCP_H;
+    for(int i=hdr_len;i<header->len;i++){
+        printf("%hhx ",*(packet+i));
     }
-    ip_addr=libnet_build_ipv4(l);
-    if ( ip_addr != -1 )
-        printf("IP address: %s\n", libnet_addr2name4(ip_addr,LIBNET_DONT_RESOLVE));
-    else {
-        fprintf(stderr, "Couldn't get own IP address: %s\n", libnet_geterror(l));
-        puts("error");
-    }
-    printf("asdf\n");
+    puts("");
+
     printf("%u bytes captured\n", header->caplen);
     return 1;
 }
@@ -74,12 +91,11 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "couldn't open device %s: %s\n", dev, errbuf);
         return -1;
     }
-
     while (true) {
-        if(anal(handle)==-1)
+        if(anal(handle,dev)==-1)
             break;
     }
-    pcap_close(handle,dev);
+    pcap_close(handle);
 
     return 0;
 }

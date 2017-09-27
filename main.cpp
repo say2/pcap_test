@@ -40,8 +40,11 @@ int anal(pcap_t* handle){
     if(ntohs(eth_hdr->ether_type) != ETHERTYPE_IP)
         return 1;
     ip_hdr=(libnet_ipv4_hdr*)(packet+LIBNET_ETH_H);
-    printf("ip_src : %s\n",inet_ntoa(ip_hdr->ip_src));
-    printf("ip_des : %s\n",inet_ntoa(ip_hdr->ip_dst));
+
+    char ipbuf[INET_ADDRSTRLEN];
+
+    printf("ip_src : %s\n",inet_ntop(AF_INET, &ip_hdr->ip_src, ipbuf, sizeof(ipbuf)));
+    printf("ip_des : %s\n",inet_ntop(AF_INET, &ip_hdr->ip_dst, ipbuf, sizeof(ipbuf)));
 
     if(ip_hdr->ip_p != IPPROTO_TCP)
         return 1;
@@ -50,8 +53,13 @@ int anal(pcap_t* handle){
     printf("src_port : %d\n",ntohs(tcp_hdr->th_sport));
     printf("des_port : %d\n",ntohs(tcp_hdr->th_dport));
 
-    int hdr_len=LIBNET_ETH_H+LIBNET_IPV4_H+LIBNET_TCP_H+0xc;
-    for(int i=hdr_len;i<header->len;i++){
+    int data_loc=LIBNET_IPV4_H+LIBNET_ETH_H+tcp_hdr->th_off*4;
+    int len=header->len-data_loc;
+    if(len>16){
+        len=16;
+    }
+
+    for(int i=data_loc;i<data_loc+len;i++){
         printf("%hhx ",*(packet+i));
     }
     puts("");
